@@ -1,4 +1,4 @@
-package comandos;
+package commands;
 
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -12,12 +12,12 @@ import picocli.CommandLine.Option;
  * @author dylan
  */
 @Command(name = "", subcommands = {CommandLine.HelpCommand.class})
-public class ComandosShell implements Runnable {
+public class ShellCommands implements Runnable {
 
     /**
      * Constructor por defecto.
      */    
-    public ComandosShell() {
+    public ShellCommands() {
 
     }
 
