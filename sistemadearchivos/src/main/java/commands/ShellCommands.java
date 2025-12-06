@@ -5,6 +5,8 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.Option;
 
+import java.io.IOException;
+
 /**
  * Shell de comandos que simula un conjunto de utilidades básicas de un
  * sistema de archivos.
@@ -14,11 +16,12 @@ import picocli.CommandLine.Option;
 @Command(name = "", subcommands = {CommandLine.HelpCommand.class})
 public class ShellCommands implements Runnable {
 
+    private FileSystemManager fsManager;
     /**
-     * Constructor por defecto.
+     * Constructor
      */    
-    public ShellCommands() {
-
+    public ShellCommands(FileSystemManager fsManager) {
+        this.fsManager = fsManager;
     }
 
 
@@ -39,7 +42,11 @@ public class ShellCommands implements Runnable {
     @Command(name = "format", description = "Formatea y crea el sistema de archivos")
     public void format(
             @Parameters(index = "0", description = "Tamaño del disco en MB") int size) {
-        // TODO
+        try {
+            fsManager.format(size);
+        } catch (IOException e) {
+            System.err.println("Error al formatear: " + e.getMessage());
+        }
     }
 
     /**
@@ -48,8 +55,14 @@ public class ShellCommands implements Runnable {
      */    
     @Command(name = "exit", description = "Sale del programa")
     public void exit() {
-        System.out.println("Saliendo del sistema de archivos...");
-        // TODO
+        try {
+            System.out.println("Saliendo del sistema de archivos...");
+            fsManager.shutdown();
+            System.exit(0);
+        } catch (IOException e) {
+            System.err.println("Error al cerrar: " + e.getMessage());
+            System.exit(1);
+        }
     }
 
     /**
@@ -60,7 +73,11 @@ public class ShellCommands implements Runnable {
     @Command(name = "useradd", description = "Crea un nuevo usuario")
     public void useradd(
             @Parameters(index = "0", description = "Nombre de usuario") String username) {
-        // TODO
+        try {
+            fsManager.addUser(username);
+        } catch (IOException e) {
+            System.err.println("Error: " + e.getMessage());
+        }
     }
 
     /**
@@ -71,7 +88,11 @@ public class ShellCommands implements Runnable {
     @Command(name = "groupadd", description = "Crea un nuevo grupo")
     public void groupadd(
             @Parameters(index = "0", description = "Nombre del grupo") String groupName) {
-        // TODO
+        try {
+            fsManager.addGroup(groupName);
+        } catch (IOException e) {
+            System.err.println("Error: " + e.getMessage());
+        }
     }
 
     /**
@@ -82,7 +103,11 @@ public class ShellCommands implements Runnable {
     @Command(name = "passwd", description = "Cambia la contraseña de un usuario")
     public void passwd(
             @Parameters(index = "0", description = "Nombre de usuario") String username) {
-        // TODO
+        try {
+            fsManager.changePassword(username);
+        } catch (IOException e) {
+            System.err.println("Error: " + e.getMessage());
+        }
     }
 
     /**
@@ -93,7 +118,11 @@ public class ShellCommands implements Runnable {
     @Command(name = "su", description = "Cambia de usuario")
     public void su(
             @Parameters(index = "0", defaultValue = "root", description = "Nombre de usuario (default: root)") String username) {
-        // TODO
+        try {
+            fsManager.switchUser(username);
+        } catch (IOException e) {
+            System.err.println("Error: " + e.getMessage());
+        }
     }
 
     /**
@@ -101,7 +130,7 @@ public class ShellCommands implements Runnable {
      */
     @Command(name = "whoami", description = "Muestra el usuario actual")
     public void whoami() {
-        // TODO
+        fsManager.whoami();
     }    
         
     /**
@@ -109,7 +138,7 @@ public class ShellCommands implements Runnable {
      */    
     @Command(name = "pwd", description = "Muestra el directorio actual")
     public void pwd() {
-        // TODO
+        fsManager.pwd();
     }
 
     /**
@@ -310,7 +339,11 @@ public class ShellCommands implements Runnable {
      */    
     @Command(name = "infoFS", description = "Muestra información del sistema de archivos")
     public void infoFS() {
-        // TODO
+        try {
+            fsManager.infoFS();
+        } catch (IOException e) {
+            System.err.println("Error: " + e.getMessage());
+        }
     }
 
     /**
