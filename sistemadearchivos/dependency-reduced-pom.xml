@@ -3,14 +3,28 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>so</groupId>
   <artifactId>sistemadearchivos</artifactId>
+  <name>File System - Proyecto 3</name>
   <version>1.0-SNAPSHOT</version>
+  <description>Sistema de Archivos Virtual para el curso de Principios de Sistemas Operativos</description>
   <build>
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.11.0</version>
         <configuration>
-          <release>${maven.compiler.release}</release>
+          <source>11</source>
+          <target>11</target>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.3.0</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>main.Main</mainClass>
+            </manifest>
+          </archive>
         </configuration>
       </plugin>
       <plugin>
@@ -25,36 +39,19 @@
             <configuration>
               <transformers>
                 <transformer>
-                  <mainClass>${mainClass}</mainClass>
+                  <mainClass>main.Main</mainClass>
                 </transformer>
               </transformers>
+              <finalName>myFileSystem</finalName>
             </configuration>
           </execution>
         </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
-        <version>3.5.1</version>
-        <configuration>
-          <mainClass>${mainClass}</mainClass>
-          <systemProperties>
-            <systemProperty>
-              <key>file.encoding</key>
-              <value>UTF-8</value>
-            </systemProperty>
-            <systemProperty>
-              <key>stdout.encoding</key>
-              <value>UTF-8</value>
-            </systemProperty>
-          </systemProperties>
-        </configuration>
       </plugin>
     </plugins>
   </build>
   <properties>
     <maven.compiler.release>24</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <mainClass>tests.ComandosShellTest</mainClass>
+    <mainClass>main.Main</mainClass>
   </properties>
 </project>
