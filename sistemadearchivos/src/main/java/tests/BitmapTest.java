@@ -21,7 +21,7 @@ public class BitmapTest {
         printBits(bitmap);
 
         // Serializar
-        byte[] bytes = bitmap.tobytes();
+        byte[] bytes = bitmap.toBytes();
 
         // Deserializar
         Bitmap loaded = Bitmap.fromBytes(bytes, 16);
