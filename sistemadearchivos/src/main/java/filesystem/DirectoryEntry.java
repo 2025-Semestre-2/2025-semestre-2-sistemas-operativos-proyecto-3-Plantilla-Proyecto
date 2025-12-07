@@ -63,7 +63,8 @@ public class DirectoryEntry {
 
     /**
      * Verifica si la entrada está libre
-     * @return 
+     * 
+     * @return
      */
     public boolean isFree() {
         return inodeNumber == -1 || entryType == FSConstants.TYPE_FREE;
@@ -71,7 +72,8 @@ public class DirectoryEntry {
 
     /**
      * Serializa la entrada a bytes
-     * @return 
+     * 
+     * @return
      */
     public byte[] toBytes() {
         ByteBuffer buffer = ByteBuffer.allocate(FSConstants.DIR_ENTRY_SIZE);
@@ -94,8 +96,9 @@ public class DirectoryEntry {
 
     /**
      * Deserializa una entrada desde bytes
+     * 
      * @param data
-     * @return 
+     * @return
      */
     public static DirectoryEntry fromBytes(byte[] data) {
         ByteBuffer buffer = ByteBuffer.wrap(data);
@@ -107,7 +110,12 @@ public class DirectoryEntry {
 
         byte[] nameBytes = new byte[244];
         buffer.get(nameBytes);
-        entry.name = new String(nameBytes).trim().replace("\0", "");
+
+        if (entry.nameLength > 0 && entry.nameLength <= 244) {
+            entry.name = new String(nameBytes, 0, entry.nameLength);
+        } else {
+            entry.name = "";
+        }
 
         return entry;
     }

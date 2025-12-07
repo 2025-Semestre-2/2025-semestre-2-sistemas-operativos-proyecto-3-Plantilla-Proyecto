@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,13 +23,13 @@ public class FileSystem {
     private Bitmap dataBlockBitmap;
 
     // Tablas en memoria
-    private Map<Integer, User> userTable;               // userID -> User
-    private Map<String, User> userByName;               // username -> User
-    private Map<Integer, Group> groupTable;              // groupID -> Group
-    private Map<String, Group> groupByName;              // groupname -> Group
+    private Map<Integer, User> userTable; // userID -> User
+    private Map<String, User> userByName; // username -> User
+    private Map<Integer, Group> groupTable; // groupID -> Group
+    private Map<String, Group> groupByName; // groupname -> Group
 
     // Archivos abiertos
-    private Map<String, Inode> openFileTable;           // path -> inode
+    private Map<String, Inode> openFileTable; // path -> inode
 
     public FileSystem(String fsFilePath) {
         this.fsFilePath = fsFilePath;
@@ -111,12 +112,12 @@ public class FileSystem {
         if (inodeNumber == -1) {
             throw new IOException("No hay inodes disponibles");
         }
-        
+
         inodeBitmap.allocate(inodeNumber);
         superblock.setFreeInodes(superblock.getFreeInodes() - 1);
         writeSuperblock();
         writeInodeBitmap();
-        
+
         return inodeNumber;
     }
 
@@ -220,7 +221,7 @@ public class FileSystem {
 
         List<DirectoryEntry> entries = new ArrayList<>();
 
-        // SOLO LEE DEL PRIMER BLOQUE DIRECTO 
+        // SOLO LEE DEL PRIMER BLOQUE DIRECTO
         int blockNumber = dirInode.getDirectBlocks()[0];
         if (blockNumber == -1) {
             return entries; // Directorio vacío
@@ -305,10 +306,10 @@ public class FileSystem {
     /**
      * Formatea y crea el sistema de archivos
      *
-     * @param sizeMB Tamaño del disco
+     * @param sizeMB             Tamaño del disco
      * @param allocationStrategy Estrategia de asignación (1=Contigua,
-     * 2=Enlazada, 3=Indexada)
-     * @param rootPassword Contraseña del usuario root
+     *                           2=Enlazada, 3=Indexada)
+     * @param rootPassword       Contraseña del usuario root
      */
     public void format(int sizeMB, int allocationStrategy, String rootPassword) throws IOException {
         System.out.println("iniciando formateo del sistema de archivos...");
@@ -406,71 +407,69 @@ public class FileSystem {
                 FSConstants.TYPE_DIRECTORY,
                 FSConstants.DEFAULT_DIR_PERMS,
                 FSConstants.ROOT_UID,
-                FSConstants.ROOT_GID
-        );
-        
+                FSConstants.ROOT_GID);
+
         rootInode.setName("/");
         rootInode.setFileSize(FSConstants.BLOCK_SIZE);
         rootInode.setLinkCount(3); // ".", ".." y "root"
-        rootInode.setDirectBlock(0, superblock.getDataBitmapStart());
+        rootInode.setDirectBlock(0, superblock.getDataBlocksStart());
         writeInode(rootInode);
         System.out.println(" Inode de '/' creado (inode 0)");
-        
+
         // Paso 7: Crear contenido del directorio raíz
         System.out.println(" Creando entradas de directorio para '/'...");
         List<DirectoryEntry> rootEntries = new ArrayList<>();
-        
+
         // Entrada "." (apunta a sí mismo)
         rootEntries.add(new DirectoryEntry(0, FSConstants.TYPE_DIRECTORY, "."));
-        
+
         // Entrada ".." (apunta a sí mismo porque es la raíz)
         rootEntries.add(new DirectoryEntry(0, FSConstants.TYPE_DIRECTORY, ".."));
 
         // Entrada "root" (apunta al directorio home del usuario root)
         rootEntries.add(new DirectoryEntry(1, FSConstants.TYPE_DIRECTORY, "root"));
-        
+
         // Rellenar con entradas vacías
         for (int i = 3; i < FSConstants.ENTRIES_PER_BLOCK; i++) {
             rootEntries.add(new DirectoryEntry());
         }
-        
+
         writeDirectoryEntries(rootInode, rootEntries);
         System.out.println("  Entradas de directorio escritas");
 
         // Paso 8: Crear inode del directorio "/root"
         System.out.println("\nCreando directorio '/root'...");
         Inode rootHomeInode = new Inode(
-            1,
-            FSConstants.TYPE_DIRECTORY,
-            FSConstants.DEFAULT_DIR_PERMS,
-            FSConstants.ROOT_UID,
-            FSConstants.ROOT_GID
-        );
+                1,
+                FSConstants.TYPE_DIRECTORY,
+                FSConstants.DEFAULT_DIR_PERMS,
+                FSConstants.ROOT_UID,
+                FSConstants.ROOT_GID);
         rootHomeInode.setName("root");
         rootHomeInode.setFileSize(FSConstants.BLOCK_SIZE);
         rootHomeInode.setLinkCount(2); // "." y ".."
         rootHomeInode.setDirectBlock(0, superblock.getDataBlocksStart() + 1);
         writeInode(rootHomeInode);
         System.out.println("  Inode de '/root' creado (inode 1)");
-        
+
         // Paso 9: Crear contenido del directorio "/root"
         System.out.println("  Creando entradas de directorio para '/root'...");
         List<DirectoryEntry> rootHomeEntries = new ArrayList<>();
-        
+
         // Entrada "." (apunta a sí mismo)
         rootHomeEntries.add(new DirectoryEntry(1, FSConstants.TYPE_DIRECTORY, "."));
-        
+
         // Entrada ".." (apunta al directorio padre "/")
         rootHomeEntries.add(new DirectoryEntry(0, FSConstants.TYPE_DIRECTORY, ".."));
-        
+
         // Rellenar con entradas vacías
         for (int i = 2; i < FSConstants.ENTRIES_PER_BLOCK; i++) {
             rootHomeEntries.add(new DirectoryEntry());
         }
-        
+
         writeDirectoryEntries(rootHomeInode, rootHomeEntries);
         System.out.println("  Entradas de directorio escritas");
-        
+
         // Paso 10: Crear usuario root
         System.out.println("\nCreando usuario root...");
         User rootUser = new User(
@@ -479,12 +478,11 @@ public class FileSystem {
                 rootPassword,
                 "Root Admin",
                 "/root",
-                FSConstants.ROOT_GID
-        );
+                FSConstants.ROOT_GID);
         userTable.put(rootUser.getUserId(), rootUser);
         userByName.put(rootUser.getUsername(), rootUser);
         System.out.println("  Usuario root creado");
-        
+
         // Paso 11: Crear grupo root
         System.out.println("\nCreando grupo root...");
         Group rootGroup = new Group(FSConstants.ROOT_GID, "root");
@@ -495,43 +493,43 @@ public class FileSystem {
 
         // Paso 12: Guardar usuarios y grupos en bloques especiales
         saveUsersAndGroups();
-        
+
         // Paso 13: Sincronizar y cerrar
         fsFile.getFD().sync();
         System.out.println("\n¡Sistema de archivos formateado exitosamente!");
         System.out.println("Archivo: " + fsFilePath);
-        System.out.println("Usuario root creado con directorio home: /root");        
+        System.out.println("Usuario root creado con directorio home: /root");
     }
-    
+
     /**
      * Guarda las tablas de usuarios y grupos en bloques especiales del FS
      * (Bloques reservados despúes de los metadatos)
      */
     private void saveUsersAndGroups() throws IOException {
         System.out.println("\nGuardando tablas de usuarios y grupos...");
-        
+
         // Bloque especial para usuarios (después del último bloque de datos usado)
         int userBlockNumber = superblock.getDataBlocksStart() + 2;
-        
+
         // Bloque especial para grupos
         int groupBlockNumber = superblock.getDataBlocksStart() + 3;
-        
+
         // Marcar estos bloques como ocupados
         dataBlockBitmap.allocate(2);
         dataBlockBitmap.allocate(3);
         superblock.setFreeBlocks(superblock.getFreeBlocks() - 2);
         writeSuperblock();
         writeDataBlockBitmap();
-        
+
         // Guardar usuarios
         byte[] userBlock = new byte[FSConstants.BLOCK_SIZE];
         int offset = 0;
-        
+
         // Guardar cantidad de usuarios
         ByteBuffer userBuffer = ByteBuffer.wrap(userBlock);
         userBuffer.putInt(userTable.size());
         offset = 4;
-        
+
         // Guardar cada usuario (512 bytes por usuario)
         for (User user : userTable.values()) {
             byte[] userData = user.toBytes();
@@ -540,18 +538,18 @@ public class FileSystem {
                 offset += userData.length;
             }
         }
-        
+
         writeBlock(userBlockNumber, userBlock);
         System.out.println("  Usuarios guardados en bloque " + userBlockNumber);
-        
+
         // Guardar grupos
         byte[] groupBlock = new byte[FSConstants.BLOCK_SIZE];
         offset = 0;
-        
+
         ByteBuffer groupBuffer = ByteBuffer.wrap(groupBlock);
         groupBuffer.putInt(groupTable.size());
         offset = 4;
-        
+
         for (Group group : groupTable.values()) {
             byte[] groupData = group.toBytes();
             if (offset + groupData.length <= FSConstants.BLOCK_SIZE) {
@@ -559,35 +557,34 @@ public class FileSystem {
                 offset += groupData.length;
             }
         }
-        
+
         writeBlock(groupBlockNumber, groupBlock);
         System.out.println("  Grupos guardados en bloque " + groupBlockNumber);
     }
-    
-    
+
     /**
      * Monta un sistema de archivos existente
      */
     public void mount() throws IOException {
         System.out.println("Montando sistema de archivos: " + fsFilePath);
-        
+
         File fsFileObj = new File(fsFilePath);
         if (!fsFileObj.exists()) {
             throw new IOException("El archivo del sistema de archivos no existe: " + fsFilePath);
         }
-        
+
         fsFile = new RandomAccessFile(fsFilePath, "rw");
-        
+
         // Leer Superblock
         System.out.println("Leyendo Superblock...");
         byte[] superblockData = readBlock(0);
         superblock = Superblock.fromBytes(superblockData);
-        
+
         // Validar magic number
         if (!superblock.isValid()) {
             throw new IOException("Sistema de archivos inválido o corrupto (magic number incorrecto)");
         }
-        
+
         System.out.println("  Sistema de archivos: " + superblock.getFsName());
         System.out.println("  Versión: " + superblock.getFsVersion());
         System.out.println("  Tamaño de bloque: " + superblock.getBlockSize());
@@ -595,98 +592,98 @@ public class FileSystem {
         System.out.println("  Bloques libres: " + superblock.getFreeBlocks());
         System.out.println("  Total de inodes: " + superblock.getTotalInodes());
         System.out.println("  Inodes libres: " + superblock.getFreeInodes());
-        
+
         // Actualizar last mount time
         superblock.setLastMountTime(System.currentTimeMillis());
         writeSuperblock();
-        
+
         // Leer Inode Bitmap
         System.out.println("\nCargando Inode Bitmap...");
         int inodeBitmapBytes = (superblock.getTotalInodes() + 7) / 8;
-        int inodeBitmapBlocks = (inodeBitmapBytes + FSConstants.BLOCK_SIZE - 1) 
-                               / FSConstants.BLOCK_SIZE;
-        
+        int inodeBitmapBlocks = (inodeBitmapBytes + FSConstants.BLOCK_SIZE - 1)
+                / FSConstants.BLOCK_SIZE;
+
         byte[] inodeBitmapData = new byte[inodeBitmapBytes];
         for (int i = 0; i < inodeBitmapBlocks; i++) {
             byte[] block = readBlock(superblock.getInodeBitmapStart() + i);
-            int copyLength = Math.min(FSConstants.BLOCK_SIZE, 
-                                     inodeBitmapBytes - i * FSConstants.BLOCK_SIZE);
-            System.arraycopy(block, 0, inodeBitmapData, 
-                           i * FSConstants.BLOCK_SIZE, copyLength);
+            int copyLength = Math.min(FSConstants.BLOCK_SIZE,
+                    inodeBitmapBytes - i * FSConstants.BLOCK_SIZE);
+            System.arraycopy(block, 0, inodeBitmapData,
+                    i * FSConstants.BLOCK_SIZE, copyLength);
         }
         inodeBitmap = Bitmap.fromBytes(inodeBitmapData, superblock.getTotalInodes());
         System.out.println("  Inode Bitmap cargado");
-        
+
         // Leer Data Block Bitmap
         System.out.println("\nCargando Data Block Bitmap...");
         int dataBlocks = superblock.getTotalBlocks() - superblock.getDataBlocksStart();
         int dataBitmapBytes = (dataBlocks + 7) / 8;
-        int dataBitmapBlocks = (dataBitmapBytes + FSConstants.BLOCK_SIZE - 1) 
-                              / FSConstants.BLOCK_SIZE;
-        
+        int dataBitmapBlocks = (dataBitmapBytes + FSConstants.BLOCK_SIZE - 1)
+                / FSConstants.BLOCK_SIZE;
+
         byte[] dataBitmapData = new byte[dataBitmapBytes];
         for (int i = 0; i < dataBitmapBlocks; i++) {
             byte[] block = readBlock(superblock.getDataBitmapStart() + i);
-            int copyLength = Math.min(FSConstants.BLOCK_SIZE, 
-                                     dataBitmapBytes - i * FSConstants.BLOCK_SIZE);
-            System.arraycopy(block, 0, dataBitmapData, 
-                           i * FSConstants.BLOCK_SIZE, copyLength);
+            int copyLength = Math.min(FSConstants.BLOCK_SIZE,
+                    dataBitmapBytes - i * FSConstants.BLOCK_SIZE);
+            System.arraycopy(block, 0, dataBitmapData,
+                    i * FSConstants.BLOCK_SIZE, copyLength);
         }
         dataBlockBitmap = Bitmap.fromBytes(dataBitmapData, dataBlocks);
         System.out.println("  Data Block Bitmap cargado");
-        
+
         // Cargar usuarios y grupos
         loadUsersAndGroups();
-        
+
         System.out.println("\n¡Sistema de archivos montado exitosamente!");
     }
-    
+
     /**
      * Carga las tablas de usuarios y grupos desde el disco
      */
     private void loadUsersAndGroups() throws IOException {
         System.out.println("\nCargando usuarios y grupos...");
-        
+
         int userBlockNumber = superblock.getDataBlocksStart() + 2;
         int groupBlockNumber = superblock.getDataBlocksStart() + 3;
-        
+
         // Cargar usuarios
         byte[] userBlock = readBlock(userBlockNumber);
         ByteBuffer userBuffer = ByteBuffer.wrap(userBlock);
-        
+
         int userCount = userBuffer.getInt();
         System.out.println("  Cargando " + userCount + " usuarios...");
-        
+
         userTable.clear();
         userByName.clear();
-        
+
         for (int i = 0; i < userCount; i++) {
             byte[] userData = new byte[512];
             userBuffer.get(userData);
             User user = User.fromBytes(userData);
-            
+
             if (user.getUserId() != -1) { // Usuario válido
                 userTable.put(user.getUserId(), user);
                 userByName.put(user.getUsername(), user);
                 System.out.println("    - " + user.getUsername() + " (" + user.getFullName() + ")");
             }
         }
-        
+
         // Cargar grupos
         byte[] groupBlock = readBlock(groupBlockNumber);
         ByteBuffer groupBuffer = ByteBuffer.wrap(groupBlock);
-        
+
         int groupCount = groupBuffer.getInt();
         System.out.println("  Cargando " + groupCount + " grupos...");
-        
+
         groupTable.clear();
         groupByName.clear();
-        
+
         for (int i = 0; i < groupCount; i++) {
             byte[] groupData = new byte[512];
             groupBuffer.get(groupData);
             Group group = Group.fromBytes(groupData);
-            
+
             if (group.getGroupId() != -1) { // Grupo válido
                 groupTable.put(group.getGroupId(), group);
                 groupByName.put(group.getGroupName(), group);
@@ -694,28 +691,28 @@ public class FileSystem {
             }
         }
     }
-    
+
     /**
      * Desmonta el sistema de archivos
      */
     public void unmount() throws IOException {
         if (fsFile != null) {
             System.out.println("Desmontando sistema de archivos...");
-            
+
             // Guardar usuarios y grupos
             saveUsersAndGroups();
-            
+
             // Sincronizar cambios
             fsFile.getFD().sync();
-            
+
             // Cerrar archivo
             fsFile.close();
             fsFile = null;
-            
+
             System.out.println("Sistema de archivos desmontado correctamente");
         }
     }
-    
+
     /**
      * Retorna el nombre de la estrategia de asignación
      */
@@ -731,11 +728,11 @@ public class FileSystem {
                 return "Desconocida";
         }
     }
-    
+
     /**
      * Verifica si el sistema de archivos está montado
      */
     public boolean isMounted() {
         return fsFile != null;
     }
-}    
+}
